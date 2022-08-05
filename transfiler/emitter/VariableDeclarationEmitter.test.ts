@@ -1,4 +1,4 @@
-import { CreateASTFromSourceCode } from "..";
+import { CreateASTFromSourceCode } from "../ast/BuildAST";
 import { EmitVariableDeclaration } from "./VariableDeclarationEmitter";
 
 test("Variable Declaration: Simple", () => {
