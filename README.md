@@ -2,7 +2,7 @@
 
 This will be and can be used limited circumstances.
 
-## This transfiler follow this step
+## This transpiler follow this step
 
 1. Build Typescript AST
 

@@ -1,3 +1,3 @@
 import * as babel from "@babel/core";
 
-export default class CSTransfiler {}
+export default class CSTranspiler {}
