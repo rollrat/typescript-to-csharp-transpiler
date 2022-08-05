@@ -2,6 +2,8 @@
 
 This will be and can be used limited circumstances.
 
+EX: https://github.com/rollrat/typescript-to-csharp-transpiler/blob/master/EX.md
+
 ## This transpiler follow this step
 
 1. Build Typescript AST
