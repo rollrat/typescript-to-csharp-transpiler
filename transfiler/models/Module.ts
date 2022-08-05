@@ -1,4 +1,6 @@
 export class CSModule {
+  constructor(fileName: string) {}
+
   usings: string[] = [];
 
   // Push External Module like

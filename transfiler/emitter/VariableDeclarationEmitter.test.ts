@@ -13,16 +13,46 @@ test("Variable Declaration: Simple", () => {
 });
 
 test("Variable Declaration: Multi Variable", () => {
-  const sourceCode = "const s,b,d: number = 0";
+  const sourceCode = "const a = 'asdf', d: number = 0";
   const ast = CreateASTFromSourceCode(sourceCode)!;
 
   const result = EmitVariableDeclaration(
     ast[0] as babel.types.VariableDeclaration
   );
 
-  expect(result[0]).toBe(`const var s;`);
-  expect(result[1]).toBe(`const var b;`);
-  expect(result[2]).toBe(`const int d = 0;`);
+  expect(result[0]).toBe(`const String a = "asdf";`);
+  expect(result[1]).toBe(`const int d = 0;`);
+});
+
+test("Variable Declaration: Map Expression 1", () => {
+  const sourceCode = `const {a, b, c} = {a: "4", b: 4, c: b()};`;
+  const ast = CreateASTFromSourceCode(sourceCode)!;
+
+  const result = EmitVariableDeclaration(
+    ast[0] as babel.types.VariableDeclaration
+  );
+
+  expect(result[0]).toBe(`const String a = "4";`);
+  expect(result[1]).toBe(`const int b = 4;`);
+  expect(result[2]).toBe(`const var c = b();`);
+});
+
+test("Variable Declaration: Map Expression 2", () => {
+  const sourceCode = `const {a, b, c} = foo()`;
+  const ast = CreateASTFromSourceCode(sourceCode)!;
+
+  const result = EmitVariableDeclaration(
+    ast[0] as babel.types.VariableDeclaration
+  );
+});
+
+test("Variable Declaration: Map Expression 3", () => {
+  const sourceCode = `const {a, b, c} = { a: "a", ...foo() }`;
+  const ast = CreateASTFromSourceCode(sourceCode)!;
+
+  const result = EmitVariableDeclaration(
+    ast[0] as babel.types.VariableDeclaration
+  );
 });
 
 test("Variable Declaration: Infer Type", () => {

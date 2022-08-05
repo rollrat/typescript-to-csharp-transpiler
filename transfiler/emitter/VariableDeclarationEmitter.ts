@@ -17,8 +17,14 @@ export function EmitVariableDeclaration(
   let kind = stmt.kind;
   let names = stmt.declarations;
 
-  function _EmitVariableDeclarator(vd: babel.types.VariableDeclarator): string {
-    /* 
+  return names.map((x) => EmitVariableDeclarator(kind, x));
+}
+
+function EmitVariableDeclarator(
+  kind: "var" | "let" | "const",
+  vd: babel.types.VariableDeclarator
+): string {
+  /* 
       ArrayExpression | 
       AssignmentExpression | 
       BinaryExpression | 
@@ -70,13 +76,27 @@ export function EmitVariableDeclaration(
       TSTypeAssertion | 
       TSNonNullExpression
     */
-    // const init = vd.init!.type ==
-    const name = (vd.id as babel.types.Identifier).name;
+  const name = (vd.id as babel.types.Identifier).name;
+  const type = vd.init?.type;
+  let etype = "var";
 
-    return `${kind}  ${name}`;
+  console.log(vd);
+
+  if (type !== null) {
+    switch (type) {
+      case "NumericLiteral":
+        etype = "int";
+        break;
+
+      case "StringLiteral":
+        etype = "String";
+        break;
+    }
   }
 
-  console.log(stmt.declarations);
+  let ekind = "";
 
-  return [""];
+  if (kind === "const") ekind = "const ";
+
+  return `${ekind}${etype} ${name}`;
 }
