@@ -76,7 +76,7 @@ onClickA -> onClickB -> setTimeout
 setTimeout -> onClicka -> onClickB
 ```
 
-## Class
+### Variable Numbering for Class
 
 ```js
 class A {
@@ -85,6 +85,8 @@ class A {
 const b = new A();
 b.a = "asdf";
 ```
+
+---
 
 ## Etc
 
