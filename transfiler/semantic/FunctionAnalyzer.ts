@@ -1,9 +1,6 @@
 import babel from "@babel/core";
-import { CSModule } from "./ModuleAnalysis";
-
-export class CSFunction {
-  constructor(public readonly ast: babel.types.Function) {}
-}
+import { CSFunction } from "../model/Function";
+import { CSModule } from "../model/Module";
 
 export function AnalyzeFunction(
   module: CSModule,

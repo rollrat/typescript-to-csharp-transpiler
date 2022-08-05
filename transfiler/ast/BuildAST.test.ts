@@ -1,4 +1,4 @@
-import { CreateASTFromSourceCode } from ".";
+import { CreateASTFromSourceCode } from "./BuildAST";
 
 test("CreateASTFromSourceCode", () => {
   const sourceCode = "const s: number = 0";
