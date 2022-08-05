@@ -7,13 +7,17 @@
     "start": "ts-node app.ts",
     "build": "tsc -p .",
     "dev": "tsc-watch --onSuccess \"ts-node app.ts\" ",
-    "test": "npx ts-jest --setupFiles dotenv/config --forceExit --detectOpenHandles"
+    "test": "npx jest --forceExit --detectOpenHandles"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/jest": "^28.1.6",
     "@types/node": "^18.6.4",
-    "tsc-watch": "^5.0.3"
+    "jest": "^28.1.3",
+    "ts-jest": "^28.0.7",
+    "tsc-watch": "^5.0.3",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
     "@babel/core": "^7.18.10",
