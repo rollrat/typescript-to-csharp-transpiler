@@ -4,7 +4,10 @@ import { CSFunction } from "./Function";
 import { CSModule } from "./Module";
 
 export default class CSVariableDeclaration {
-  constructor(private variableDeclaration: babel.types.VariableDeclaration) {
+  constructor(
+    func: CSFunction,
+    private variableDeclaration: babel.types.VariableDeclaration
+  ) {
     this.variableDeclaration.declarations.forEach((x) =>
       this._visitVariableDeclarator(this.variableDeclaration.kind, x)
     );
