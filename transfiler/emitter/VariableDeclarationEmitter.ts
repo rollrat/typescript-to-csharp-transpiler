@@ -2,7 +2,7 @@ import * as babel from "@babel/core";
 
 export function EmitVariableDeclaration(
   stmt: babel.types.VariableDeclaration
-): string {
+): string[] {
   /*
     ts=> const s: number = 0
     cs=> const int s = 0;
@@ -78,5 +78,5 @@ export function EmitVariableDeclaration(
 
   console.log(stmt.declarations);
 
-  return "";
+  return [""];
 }

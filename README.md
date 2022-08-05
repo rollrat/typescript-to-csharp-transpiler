@@ -8,19 +8,19 @@ This will be and can be used limited circumstances.
 
    - using bable typescript plugin
 
-2. Sementic Analysis
+2. Semantic Analysis (Semantic)
 
    - process adding necessary modules and module context linkage, type inference, type lowering
    - finds a type or syntax that cannot be transpiled
    - these are later split into override functions or return an error to the user
 
-3. Static Analysis
+3. Static Analysis (Analysis)
 
    - find expensive methods or loops.
 
-4. Code Transform for Optimizing
+4. Code Transform for Optimizing (Transform)
 
    - remove unnecessary code and optimize code
    - like loop unroll etc...
 
-5. Emit to CSharp Code
+5. Emit to CSharp Code (Emitter)
