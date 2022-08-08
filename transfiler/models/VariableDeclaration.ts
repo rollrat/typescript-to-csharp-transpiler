@@ -65,16 +65,7 @@ export default class CSVariableDeclaration implements IEmitterable {
     let expression: CSExpression | undefined;
 
     if (vd.init !== null) {
-      switch (vd.init!.type) {
-        case "NumericLiteral":
-          etype = "int";
-          break;
-
-        case "StringLiteral":
-          etype = "String";
-          break;
-      }
-
+      etype = this.extractRawTypeFromExpression(vd.init!);
       expression = new CSExpression(vd.init!);
     } else {
       /* infer type if possible */
@@ -102,16 +93,12 @@ export default class CSVariableDeclaration implements IEmitterable {
       switch (vd.init!.type) {
         case "ObjectExpression":
           const oe = vd.init as babel.types.ObjectExpression;
-          const rightIds = oe.properties
+          const rights = oe.properties
             .filter((p) => p.type === "ObjectProperty")
             .map((p) => p as babel.types.ObjectProperty)
-            .filter((p) => p.key.type === "Identifier")
-            .map((p) => p.key as babel.types.Identifier);
-          const rightValues = oe.properties
-            .filter((p) => p.type === "ObjectProperty")
-            .map((p) => p as babel.types.ObjectProperty)
-            .filter((p) => p.key.type === "Identifier")
-            .map((p) => p.value);
+            .filter((p) => p.key.type === "Identifier");
+          const rightIds = rights.map((p) => p.key as babel.types.Identifier);
+          const rightValues = rights.map((p) => p.value);
 
           const intersect = IntersectStringArray(
             leftIds.map((e) => e.name),
@@ -121,6 +108,7 @@ export default class CSVariableDeclaration implements IEmitterable {
           if (intersect.length > 0) {
             intersect.forEach((p) => {
               const l = leftIds[p.a];
+
               let expression: CSExpression | undefined;
               let etype = "var";
 
@@ -128,17 +116,7 @@ export default class CSVariableDeclaration implements IEmitterable {
                 throw new Error("Semantic Error!");
               else {
                 const re = rightValues[p.b] as babel.types.Expression;
-
-                switch (re.type) {
-                  case "NumericLiteral":
-                    etype = "int";
-                    break;
-
-                  case "StringLiteral":
-                    etype = "String";
-                    break;
-                }
-
+                etype = this.extractRawTypeFromExpression(re);
                 expression = new CSExpression(re);
               }
 
@@ -151,6 +129,18 @@ export default class CSVariableDeclaration implements IEmitterable {
           break;
       }
     }
+  }
+
+  private extractRawTypeFromExpression(expr: babel.types.Expression) {
+    switch (expr.type) {
+      case "NumericLiteral":
+        return "int";
+
+      case "StringLiteral":
+        return "String";
+    }
+
+    return "var";
   }
 }
 
