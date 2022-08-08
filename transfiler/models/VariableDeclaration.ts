@@ -1,6 +1,11 @@
+import { randomInt } from "crypto";
 import { emit } from "process";
 import CSEmitter from "../emitter/Emitter";
-import { EqualStringArraySet, IntersectStringArray } from "../utils/ArrayUtil";
+import {
+  ComplementStringArray,
+  EqualStringArraySet,
+  IntersectStringArray,
+} from "../utils/ArrayUtil";
 import CSExpression from "./Expression";
 import { CSFunction } from "./Function";
 import IEmitterable from "./IEmitterable";
@@ -91,6 +96,7 @@ export default class CSVariableDeclaration implements IEmitterable {
 
     if (vd.init !== null) {
       switch (vd.init!.type) {
+        // ex: const {a, b, c} = {a: "4", b: 4, c: b()};
         case "ObjectExpression":
           const oe = vd.init as babel.types.ObjectExpression;
           const rights = oe.properties
@@ -126,6 +132,57 @@ export default class CSVariableDeclaration implements IEmitterable {
             });
           }
 
+          const complement = ComplementStringArray(
+            leftIds.map((e) => e.name),
+            rightIds.map((e) => e.name)
+          );
+
+          if (complement.length > 0) {
+            // these will be from rests...
+          }
+
+          break;
+
+        // ex: const {a, b, c, ...rest} = foo;
+        case "Identifier":
+          const id = vd.init! as babel.types.Identifier;
+
+          leftIds.forEach((e) => {
+            this.decls.push(
+              new CSVariableDeclarator(
+                kind,
+                e.name,
+                "var",
+                `${id.name}.${e.name}`
+              )
+            );
+          });
+
+          if (includeRest) {
+            // how to handle this?
+          }
+
+          break;
+
+        // ex: const {a, b, c, ...rest} = foo();
+        case "CallExpression":
+          const ce = vd.init! as babel.types.CallExpression;
+          const init = new CSExpression(ce);
+          const tname = "tmp" + randomInt(10000, 100000).toString();
+
+          this.decls.push(new CSVariableDeclarator(kind, tname, "var", init));
+
+          leftIds.forEach((e) => {
+            this.decls.push(
+              new CSVariableDeclarator(
+                kind,
+                e.name,
+                "var",
+                `${tname}.${e.name}`
+              )
+            );
+          });
+
           break;
       }
     }
@@ -150,7 +207,7 @@ class CSVariableDeclarator implements IEmitterable {
     public kind: any,
     public name: any,
     public type: any,
-    public init?: CSExpression
+    public init?: CSExpression | string
   ) {}
 
   emit(emitter: CSEmitter) {
@@ -164,7 +221,8 @@ class CSVariableDeclarator implements IEmitterable {
     p += this.name + " ";
 
     if (this.init !== undefined) {
-      p += `= ${this.init.emitStr()}`;
+      if (typeof this.init === "string") p += `= ${this.init}`;
+      else p += `= ${this.init.emitStr()}`;
     }
     p += ";";
 

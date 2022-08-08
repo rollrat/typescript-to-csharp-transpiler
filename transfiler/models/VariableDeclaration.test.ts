@@ -37,16 +37,28 @@ test("Variable Declaration: Map Expression 1", () => {
   expect(result[2]).toBe(`const var c = b();`);
 });
 
+/* Success */
 test("Variable Declaration: Map Expression 2", () => {
-  const sourceCode = `const {a, b, c} = foo()`;
-  const ast = CreateASTFromSourceCode(sourceCode)!;
+  const sourceCode = `const {a, b, c} = foo`;
+  const result = vdTest(sourceCode);
 
-  const result = new CSVariableDeclaration(
-    ast[0] as babel.types.VariableDeclaration
-  );
+  expect(result[0]).toBe(`const var a = foo.a;`);
+  expect(result[1]).toBe(`const var b = foo.b;`);
+  expect(result[2]).toBe(`const var c = foo.c;`);
 });
 
+/* Success */
 test("Variable Declaration: Map Expression 3", () => {
+  const sourceCode = `const {a, b, c} = foo()`;
+  const result = vdTest(sourceCode);
+
+  expect(result[0]).toMatch(/const var \w+ = foo\(\);/);
+  expect(result[1]).toMatch(/const var a = \w+.a;/);
+  expect(result[2]).toMatch(/const var b = \w+.b;/);
+  expect(result[3]).toMatch(/const var c = \w+.c;/);
+});
+
+test("Variable Declaration: Map Expression 4", () => {
   const sourceCode = `const {a, b, c} = { a: "a", ...foo() }`;
   const result = vdTest(sourceCode);
 });
