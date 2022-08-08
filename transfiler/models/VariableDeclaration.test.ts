@@ -27,6 +27,7 @@ test("Variable Declaration: Multi Variable", () => {
   expect(result[1]).toBe(`const int d = 0;`);
 });
 
+/* Success */
 test("Variable Declaration: Map Expression 1", () => {
   const sourceCode = `const {a, b, c} = {a: "4", b: 4, c: b()};`;
   const result = vdTest(sourceCode);

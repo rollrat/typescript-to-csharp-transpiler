@@ -1,5 +1,6 @@
 import { emit } from "process";
 import CSEmitter from "../emitter/Emitter";
+import { EqualStringArraySet, IntersectStringArray } from "../utils/ArrayUtil";
 import CSExpression from "./Expression";
 import { CSFunction } from "./Function";
 import IEmitterable from "./IEmitterable";
@@ -42,6 +43,10 @@ export default class CSVariableDeclaration implements IEmitterable {
 
       case "ObjectPattern":
         // ex: const {a, b, c} = {b: 4, a: "4", c: b()};
+        // ex: const {a, b, c} = foo();
+        // ex: const {a, b, c} = {b, ...foo()};
+        // ex: const {a, ...rest} = {b, ...foo()};
+        this.visitObjectPattern(kind, vd);
         break;
 
       case "ArrayPattern":
@@ -60,18 +65,14 @@ export default class CSVariableDeclaration implements IEmitterable {
     let expression: CSExpression | undefined;
 
     if (vd.init !== null) {
-      const type = vd.init!.type;
+      switch (vd.init!.type) {
+        case "NumericLiteral":
+          etype = "int";
+          break;
 
-      if (type !== null) {
-        switch (type) {
-          case "NumericLiteral":
-            etype = "int";
-            break;
-
-          case "StringLiteral":
-            etype = "String";
-            break;
-        }
+        case "StringLiteral":
+          etype = "String";
+          break;
       }
 
       expression = new CSExpression(vd.init!);
@@ -80,6 +81,76 @@ export default class CSVariableDeclaration implements IEmitterable {
     }
 
     this.decls.push(new CSVariableDeclarator(kind, name, etype, expression));
+  }
+
+  private visitObjectPattern(
+    kind: "var" | "let" | "const",
+    vd: babel.types.VariableDeclarator
+  ) {
+    const op = vd.id as babel.types.ObjectPattern;
+    const propertyCount = op.properties.length;
+
+    const includeRest = op.properties.some((p) => p.type === "RestElement");
+
+    const leftIds = op.properties
+      .filter((p) => p.type === "ObjectProperty")
+      .map((p) => p as babel.types.ObjectProperty)
+      .filter((p) => p.key.type === "Identifier")
+      .map((p) => p.key as babel.types.Identifier);
+
+    if (vd.init !== null) {
+      switch (vd.init!.type) {
+        case "ObjectExpression":
+          const oe = vd.init as babel.types.ObjectExpression;
+          const rightIds = oe.properties
+            .filter((p) => p.type === "ObjectProperty")
+            .map((p) => p as babel.types.ObjectProperty)
+            .filter((p) => p.key.type === "Identifier")
+            .map((p) => p.key as babel.types.Identifier);
+          const rightValues = oe.properties
+            .filter((p) => p.type === "ObjectProperty")
+            .map((p) => p as babel.types.ObjectProperty)
+            .filter((p) => p.key.type === "Identifier")
+            .map((p) => p.value);
+
+          const intersect = IntersectStringArray(
+            leftIds.map((e) => e.name),
+            rightIds.map((e) => e.name)
+          );
+
+          if (intersect.length > 0) {
+            intersect.forEach((p) => {
+              const l = leftIds[p.a];
+              let expression: CSExpression | undefined;
+              let etype = "var";
+
+              if (rightValues[p.b].type === "RestElement")
+                throw new Error("Semantic Error!");
+              else {
+                const re = rightValues[p.b] as babel.types.Expression;
+
+                switch (re.type) {
+                  case "NumericLiteral":
+                    etype = "int";
+                    break;
+
+                  case "StringLiteral":
+                    etype = "String";
+                    break;
+                }
+
+                expression = new CSExpression(re);
+              }
+
+              this.decls.push(
+                new CSVariableDeclarator(kind, l.name, etype, expression)
+              );
+            });
+          }
+
+          break;
+      }
+    }
   }
 }
 
