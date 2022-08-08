@@ -21,7 +21,8 @@ import { CreateASTFromSourceCode } from "./transfiler/ast/BuildAST";
 //     .declarations
 // );
 
-const sourceCode = `const {a, b, c} = {a: "4", b: 4, c: b()};`;
+// const sourceCode = `const {a, b, c} = {a: "4", b: 4, c: b()};`;
+const sourceCode = `const s: number = 0`;
 const ast = CreateASTFromSourceCode(sourceCode)!;
 
 console.log((ast[0] as babel.types.VariableDeclaration).declarations[0]);
