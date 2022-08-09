@@ -73,8 +73,24 @@ test("Variable Declaration: Map Expression 4", () => {
 });
 
 test("Variable Declaration: Map Expression 5", () => {
+  const sourceCode = `const {a, b, c, ...r} = foo()`;
+  const result = vdTest(sourceCode);
+
+  expect(result[0]).toMatch(/const var \w+ = foo\(\);/);
+  expect(result[1]).toMatch(/const var a = \w+.a;/);
+  expect(result[2]).toMatch(/const var b = \w+.b;/);
+  expect(result[3]).toMatch(/const var c = \w+.c;/);
+  expect(result[4]).toMatch(/const var r = \w+;/);
+});
+
+test("Variable Declaration: Map Expression 6", () => {
   const sourceCode = `const {a, b, c} = { a: "a", ...foo() }`;
   const result = vdTest(sourceCode);
+
+  expect(result[0]).toMatch(/const var \w+ = foo\(\);/);
+  expect(result[1]).toMatch(/const var a = \w+.a;/);
+  expect(result[2]).toMatch(/const var b = \w+.b;/);
+  expect(result[3]).toMatch(/const var c = \w+.c;/);
 });
 
 test("Variable Declaration: Infer Type", () => {

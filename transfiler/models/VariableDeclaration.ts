@@ -192,6 +192,15 @@ export default class CSVariableDeclaration implements IEmitterable {
             );
           });
 
+          if (includeRest) {
+            // how to handle this?
+            const rest = op.properties.filter(
+              (p) => p.type === "RestElement"
+            )[0] as babel.types.RestElement;
+            const name = (rest.argument as babel.types.Identifier).name;
+            this.decls.push(new CSVariableDeclarator(kind, name, "var", tname));
+          }
+
           break;
       }
     }
