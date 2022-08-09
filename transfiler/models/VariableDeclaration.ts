@@ -1,3 +1,4 @@
+import { NodePath } from "@babel/traverse";
 import { randomInt } from "crypto";
 import { emit } from "process";
 import CSEmitter from "../emitter/Emitter";
@@ -14,11 +15,12 @@ import { CSModule } from "./Module";
 export default class CSVariableDeclaration implements IEmitterable {
   constructor(
     // func: CSFunction,
-    private variableDeclaration: babel.types.VariableDeclaration
+    private variableDeclaration: NodePath<babel.types.VariableDeclaration>
   ) {
-    this.variableDeclaration.declarations.forEach((x) =>
-      this.visitVariableDeclarator(this.variableDeclaration.kind, x)
-    );
+    this.variableDeclaration.traverse({
+      VariableDeclarator: (path) =>
+        this.visitVariableDeclarator(this.variableDeclaration.node.kind, path),
+    });
   }
 
   private decls: CSVariableDeclarator[] = [];
@@ -35,9 +37,9 @@ export default class CSVariableDeclaration implements IEmitterable {
 
   private visitVariableDeclarator(
     kind: "var" | "let" | "const",
-    vd: babel.types.VariableDeclarator
+    vd: NodePath<babel.types.VariableDeclarator>
   ) {
-    switch (vd.id.type) {
+    switch (vd.node.id.type) {
       case "Identifier":
         // ex: var str: string = 'ASDF';
         this.visitIdentifier(kind, vd);
@@ -62,16 +64,16 @@ export default class CSVariableDeclaration implements IEmitterable {
 
   private visitIdentifier(
     kind: "var" | "let" | "const",
-    vd: babel.types.VariableDeclarator
+    vd: NodePath<babel.types.VariableDeclarator>
   ) {
-    const id = vd.id as babel.types.Identifier;
+    const id = vd.node.id as babel.types.Identifier;
     const name = id.name;
     let etype = "var";
     let expression: CSExpression | undefined;
 
-    if (vd.init !== null) {
-      etype = this.extractRawTypeFromExpression(vd.init!);
-      expression = new CSExpression(vd.init!);
+    if (vd.node.init !== null) {
+      etype = this.extractRawTypeFromExpression(vd.node.init!);
+      expression = new CSExpression(vd.node.init!);
     } else {
       /* infer type if possible */
     }
@@ -81,9 +83,9 @@ export default class CSVariableDeclaration implements IEmitterable {
 
   private visitObjectPattern(
     kind: "var" | "let" | "const",
-    vd: babel.types.VariableDeclarator
+    vd: NodePath<babel.types.VariableDeclarator>
   ) {
-    const op = vd.id as babel.types.ObjectPattern;
+    const op = vd.node.id as babel.types.ObjectPattern;
     const propertyCount = op.properties.length;
 
     const includeRest = op.properties.some((p) => p.type === "RestElement");
@@ -94,11 +96,11 @@ export default class CSVariableDeclaration implements IEmitterable {
       .filter((p) => p.key.type === "Identifier")
       .map((p) => p.key as babel.types.Identifier);
 
-    if (vd.init !== null) {
-      switch (vd.init!.type) {
+    if (vd.node.init !== null) {
+      switch (vd.node.init!.type) {
         // ex: const {a, b, c} = {a: "4", b: 4, c: b()};
         case "ObjectExpression":
-          const oe = vd.init as babel.types.ObjectExpression;
+          const oe = vd.node.init as babel.types.ObjectExpression;
           const rights = oe.properties
             .filter((p) => p.type === "ObjectProperty")
             .map((p) => p as babel.types.ObjectProperty)
@@ -145,7 +147,7 @@ export default class CSVariableDeclaration implements IEmitterable {
 
         // ex: const {a, b, c, ...rest} = foo;
         case "Identifier":
-          const id = vd.init! as babel.types.Identifier;
+          const id = vd.node.init! as babel.types.Identifier;
 
           leftIds.forEach((e) => {
             this.decls.push(
@@ -160,13 +162,20 @@ export default class CSVariableDeclaration implements IEmitterable {
 
           if (includeRest) {
             // how to handle this?
+            const rest = op.properties.filter(
+              (p) => p.type === "RestElement"
+            )[0] as babel.types.RestElement;
+            const name = (rest.argument as babel.types.Identifier).name;
+            this.decls.push(
+              new CSVariableDeclarator(kind, name, "var", `${id.name}`)
+            );
           }
 
           break;
 
         // ex: const {a, b, c, ...rest} = foo();
         case "CallExpression":
-          const ce = vd.init! as babel.types.CallExpression;
+          const ce = vd.node.init! as babel.types.CallExpression;
           const init = new CSExpression(ce);
           const tname = "tmp" + randomInt(10000, 100000).toString();
 

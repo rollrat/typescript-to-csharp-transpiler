@@ -2,7 +2,7 @@ import * as babel from "@babel/core";
 
 export function CreateASTFromSourceCode(
   sourceCode: string
-): babel.types.Statement[] | undefined {
+): babel.types.File | null | undefined {
   const parsedAst = babel.parseSync(sourceCode, {
     parserOpts: {
       allowReturnOutsideFunction: true,
@@ -18,7 +18,7 @@ export function CreateASTFromSourceCode(
     options!
   )!;
 
-  return ast?.program.body;
+  return ast;
 }
 
 export function EmitLiteral() {}

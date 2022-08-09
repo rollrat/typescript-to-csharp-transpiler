@@ -1,13 +1,16 @@
 import { CreateASTFromSourceCode } from "../ast/BuildAST";
+import { Traverse } from "../ast/Traverse";
 import CSVariableDeclaration from "./VariableDeclaration";
 
 function vdTest(sourceCode: string): string[] {
   const ast = CreateASTFromSourceCode(sourceCode)!;
-  const result = new CSVariableDeclaration(
-    ast[0] as babel.types.VariableDeclaration
-  );
 
-  return result.emitStr().trim().split("\n");
+  Traverse(ast);
+
+  return (ast.program.body[0].extra!["ts-cs"]! as CSVariableDeclaration)
+    .emitStr()
+    .trim()
+    .split("\n");
 }
 
 /* Success */
@@ -58,7 +61,18 @@ test("Variable Declaration: Map Expression 3", () => {
   expect(result[3]).toMatch(/const var c = \w+.c;/);
 });
 
+/* Success */
 test("Variable Declaration: Map Expression 4", () => {
+  const sourceCode = `const {a, b, c, ...r} = foo`;
+  const result = vdTest(sourceCode);
+
+  expect(result[0]).toBe(`const var a = foo.a;`);
+  expect(result[1]).toBe(`const var b = foo.b;`);
+  expect(result[2]).toBe(`const var c = foo.c;`);
+  expect(result[2]).toBe(`const var r = foo;`);
+});
+
+test("Variable Declaration: Map Expression 5", () => {
   const sourceCode = `const {a, b, c} = { a: "a", ...foo() }`;
   const result = vdTest(sourceCode);
 });
