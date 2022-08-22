@@ -72,6 +72,7 @@ test("Variable Declaration: Map Expression 4", () => {
   expect(result[2]).toBe(`const var r = foo;`);
 });
 
+/* Success */
 test("Variable Declaration: Map Expression 5", () => {
   const sourceCode = `const {a, b, c, ...r} = foo()`;
   const result = vdTest(sourceCode);

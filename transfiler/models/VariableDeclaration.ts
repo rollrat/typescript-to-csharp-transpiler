@@ -100,109 +100,162 @@ export default class CSVariableDeclaration implements IEmitterable {
       switch (vd.node.init!.type) {
         // ex: const {a, b, c} = {a: "4", b: 4, c: b()};
         case "ObjectExpression":
-          const oe = vd.node.init as babel.types.ObjectExpression;
-          const rights = oe.properties
-            .filter((p) => p.type === "ObjectProperty")
-            .map((p) => p as babel.types.ObjectProperty)
-            .filter((p) => p.key.type === "Identifier");
-          const rightIds = rights.map((p) => p.key as babel.types.Identifier);
-          const rightValues = rights.map((p) => p.value);
-
-          const intersect = IntersectStringArray(
-            leftIds.map((e) => e.name),
-            rightIds.map((e) => e.name)
+          this.visitObjectPatternObjectExpression(
+            kind,
+            vd.node.init as babel.types.ObjectExpression,
+            leftIds
           );
-
-          if (intersect.length > 0) {
-            intersect.forEach((p) => {
-              const l = leftIds[p.a];
-
-              let expression: CSExpression | undefined;
-              let etype = "var";
-
-              if (rightValues[p.b].type === "RestElement")
-                throw new Error("Semantic Error!");
-              else {
-                const re = rightValues[p.b] as babel.types.Expression;
-                etype = this.extractRawTypeFromExpression(re);
-                expression = new CSExpression(re);
-              }
-
-              this.decls.push(
-                new CSVariableDeclarator(kind, l.name, etype, expression)
-              );
-            });
-          }
-
-          const complement = ComplementStringArray(
-            leftIds.map((e) => e.name),
-            rightIds.map((e) => e.name)
-          );
-
-          if (complement.length > 0) {
-            // these will be from rests...
-          }
-
           break;
 
         // ex: const {a, b, c, ...rest} = foo;
         case "Identifier":
-          const id = vd.node.init! as babel.types.Identifier;
-
-          leftIds.forEach((e) => {
-            this.decls.push(
-              new CSVariableDeclarator(
-                kind,
-                e.name,
-                "var",
-                `${id.name}.${e.name}`
-              )
-            );
-          });
-
-          if (includeRest) {
-            // how to handle this?
-            const rest = op.properties.filter(
-              (p) => p.type === "RestElement"
-            )[0] as babel.types.RestElement;
-            const name = (rest.argument as babel.types.Identifier).name;
-            this.decls.push(
-              new CSVariableDeclarator(kind, name, "var", `${id.name}`)
-            );
-          }
-
+          this.visitObjectPatternIdentifier(
+            kind,
+            op,
+            vd.node.init! as babel.types.Identifier,
+            leftIds,
+            includeRest
+          );
           break;
 
         // ex: const {a, b, c, ...rest} = foo();
         case "CallExpression":
-          const ce = vd.node.init! as babel.types.CallExpression;
-          const init = new CSExpression(ce);
-          const tname = "tmp" + randomInt(10000, 100000).toString();
-
-          this.decls.push(new CSVariableDeclarator(kind, tname, "var", init));
-
-          leftIds.forEach((e) => {
-            this.decls.push(
-              new CSVariableDeclarator(
-                kind,
-                e.name,
-                "var",
-                `${tname}.${e.name}`
-              )
-            );
-          });
-
-          if (includeRest) {
-            // how to handle this?
-            const rest = op.properties.filter(
-              (p) => p.type === "RestElement"
-            )[0] as babel.types.RestElement;
-            const name = (rest.argument as babel.types.Identifier).name;
-            this.decls.push(new CSVariableDeclarator(kind, name, "var", tname));
-          }
-
+          this.visitObjectPatternCallExpression(
+            kind,
+            op,
+            vd.node.init! as babel.types.CallExpression,
+            leftIds,
+            includeRest
+          );
           break;
       }
+    }
+  }
+
+  /**
+   * Terminal Processor
+   * ex) const {a, b, c} = {a: "4", b: 4, c: b()};
+   * @desc
+   * @param kind
+   * @param oe
+   * @param leftIds
+   */
+  private visitObjectPatternObjectExpression(
+    kind: "var" | "let" | "const",
+    oe: babel.types.ObjectExpression,
+    leftIds: babel.types.Identifier[]
+  ) {
+    const rights = oe.properties
+      .filter((p) => p.type === "ObjectProperty")
+      .map((p) => p as babel.types.ObjectProperty)
+      .filter((p) => p.key.type === "Identifier");
+    const rightIds = rights.map((p) => p.key as babel.types.Identifier);
+    const rightValues = rights.map((p) => p.value);
+
+    const intersect = IntersectStringArray(
+      leftIds.map((e) => e.name),
+      rightIds.map((e) => e.name)
+    );
+
+    if (intersect.length > 0) {
+      intersect.forEach((p) => {
+        const l = leftIds[p.a];
+
+        let expression: CSExpression | undefined;
+        let etype = "var";
+
+        if (rightValues[p.b].type === "RestElement")
+          throw new Error("Semantic Error!");
+        else {
+          const re = rightValues[p.b] as babel.types.Expression;
+          etype = this.extractRawTypeFromExpression(re);
+          expression = new CSExpression(re);
+        }
+
+        this.decls.push(
+          new CSVariableDeclarator(kind, l.name, etype, expression)
+        );
+      });
+    }
+
+    const complement = ComplementStringArray(
+      leftIds.map((e) => e.name),
+      rightIds.map((e) => e.name)
+    );
+
+    if (complement.length > 0) {
+      // these will be from rests...
+    }
+  }
+
+  /**
+   * Terminal Processor
+   * ex) const {a, b, c, ...rest} = foo;
+   * @param kind
+   * @param op
+   * @param id
+   * @param leftIds
+   * @param includeRest
+   */
+  private visitObjectPatternIdentifier(
+    kind: "var" | "let" | "const",
+    op: babel.types.ObjectPattern,
+    id: babel.types.Identifier,
+    leftIds: babel.types.Identifier[],
+    includeRest: boolean
+  ) {
+    leftIds.forEach((e) => {
+      this.decls.push(
+        new CSVariableDeclarator(kind, e.name, "var", `${id.name}.${e.name}`)
+      );
+    });
+
+    if (includeRest) {
+      // how to handle this?
+      const rest = op.properties.filter(
+        (p) => p.type === "RestElement"
+      )[0] as babel.types.RestElement;
+      const name = (rest.argument as babel.types.Identifier).name;
+      this.decls.push(
+        new CSVariableDeclarator(kind, name, "var", `${id.name}`)
+      );
+    }
+  }
+
+  /**
+   * Terminal Processor
+   * ex) const {a, b, c, ...rest} = foo();
+   * @param kind
+   * @param op
+   * @param callExpr
+   * @param leftIds
+   * @param includeRest
+   */
+  private visitObjectPatternCallExpression(
+    kind: "var" | "let" | "const",
+    op: babel.types.ObjectPattern,
+    callExpr: babel.types.CallExpression,
+    leftIds: babel.types.Identifier[],
+    includeRest: boolean
+  ) {
+    const init = new CSExpression(callExpr);
+    const tname = "tmp" + randomInt(10000, 100000).toString();
+
+    this.decls.push(new CSVariableDeclarator(kind, tname, "var", init));
+
+    leftIds.forEach((e) => {
+      this.decls.push(
+        new CSVariableDeclarator(kind, e.name, "var", `${tname}.${e.name}`)
+      );
+    });
+
+    if (includeRest) {
+      // how to handle this?
+      const rest = op.properties.filter(
+        (p) => p.type === "RestElement"
+      )[0] as babel.types.RestElement;
+      const name = (rest.argument as babel.types.Identifier).name;
+      this.decls.push(new CSVariableDeclarator(kind, name, "var", tname));
     }
   }
 
