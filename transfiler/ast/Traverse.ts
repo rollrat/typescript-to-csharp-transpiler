@@ -1,4 +1,5 @@
 import { traverse } from "@babel/core";
+import { CSFunctionDeclaration } from "../models/FunctionDeclaration";
 import CSVariableDeclaration from "../models/VariableDeclaration";
 
 // https://babeljs.io/docs/en/babel-traverse
@@ -12,6 +13,10 @@ export function Traverse(ast: babel.types.File) {
     VariableDeclaration: function (path) {
       if (path.node.extra === undefined) path.node.extra = {};
       path.node.extra["ts-cs"] = new CSVariableDeclaration(path);
+    },
+    FunctionDeclaration: function (path) {
+      if (path.node.extra === undefined) path.node.extra = {};
+      path.node.extra["ts-cs"] = new CSFunctionDeclaration(path);
     },
   });
 }
