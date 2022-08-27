@@ -17,5 +17,5 @@ test("Function Declaration: Simple", () => {
   const sourceCode = "function foo() { }";
   const result = fdTest(sourceCode);
 
-  expect(result[0]).toBe("const int s = 0;");
+  expect(result[0]).toBe("void foo() { }");
 });
